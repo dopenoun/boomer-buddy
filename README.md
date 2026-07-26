@@ -28,7 +28,7 @@ npm run build
 
 The build creates:
 
-- `dist/public` for Cloudflare Workers Static Assets
+- `public` for Cloudflare Workers Static Assets
 - `dist/server` for the connected hosted preview
 
 ## Cloudflare deployment

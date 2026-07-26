@@ -60,15 +60,11 @@ export default {
 
 await rm(new URL("./dist", import.meta.url), { recursive: true, force: true });
 await mkdir(new URL("./dist/server", import.meta.url), { recursive: true });
-await mkdir(new URL("./dist/public", import.meta.url), { recursive: true });
 await writeFile(new URL("./dist/server/index.js", import.meta.url), workerSource);
 await writeFile(
-  new URL("./dist/public/index.html", import.meta.url),
+  new URL("./public/index.html", import.meta.url),
   sourceHtml.replaceAll("{{ORIGIN}}", "https://boomer-buddy.alokahzebra02311.workers.dev")
 );
-await writeFile(new URL("./dist/public/gadget-catalog.html", import.meta.url), redirectHtml);
-if (socialImage) {
-  await writeFile(new URL("./dist/public/og.png", import.meta.url), socialImage);
-}
+await writeFile(new URL("./public/gadget-catalog.html", import.meta.url), redirectHtml);
 
-console.log("Built Sites worker and Cloudflare static assets");
+console.log("Built Sites worker and refreshed Cloudflare static assets");
