@@ -1,10 +1,12 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 
 const sourceHtml = await readFile(new URL("./index.html", import.meta.url), "utf8");
+const redirectHtml = await readFile(new URL("./gadget-catalog.html", import.meta.url), "utf8");
 let socialImageBase64 = "";
+let socialImage;
 
 try {
-  const socialImage = await readFile(new URL("./public/og.png", import.meta.url));
+  socialImage = await readFile(new URL("./public/og.png", import.meta.url));
   socialImageBase64 = socialImage.toString("base64");
 } catch {
   // The site remains deployable if a sharing image has not been generated yet.
@@ -58,6 +60,15 @@ export default {
 
 await rm(new URL("./dist", import.meta.url), { recursive: true, force: true });
 await mkdir(new URL("./dist/server", import.meta.url), { recursive: true });
+await mkdir(new URL("./dist/public", import.meta.url), { recursive: true });
 await writeFile(new URL("./dist/server/index.js", import.meta.url), workerSource);
+await writeFile(
+  new URL("./dist/public/index.html", import.meta.url),
+  sourceHtml.replaceAll("{{ORIGIN}}", "https://boomer-buddy.alokahzebra02311.workers.dev")
+);
+await writeFile(new URL("./dist/public/gadget-catalog.html", import.meta.url), redirectHtml);
+if (socialImage) {
+  await writeFile(new URL("./dist/public/og.png", import.meta.url), socialImage);
+}
 
-console.log("Built dist/server/index.js");
+console.log("Built Sites worker and Cloudflare static assets");

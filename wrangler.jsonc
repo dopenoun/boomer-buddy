@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "boomer-buddy",
+  "compatibility_date": "2026-07-26",
+  "assets": {
+    "directory": "./dist/public"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

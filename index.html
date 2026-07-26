@@ -276,7 +276,7 @@
 
     .finder {
       display: grid;
-      grid-template-columns: 1fr auto auto;
+      grid-template-columns: 1fr auto;
       grid-column: 1 / -1;
       gap: 10px;
       margin-top: 18px;
@@ -318,12 +318,6 @@
       color: #fff;
       background: var(--accent-dark);
       border-color: var(--accent-dark);
-    }
-
-    .voice-button.listening {
-      color: #fff;
-      background: #a53232;
-      border-color: #a53232;
     }
 
     .search-status {
@@ -658,8 +652,8 @@
       .brand { margin-bottom: 28px; }
       .reading-tools { grid-template-columns: 1fr; }
       .tool-groups { justify-content: flex-start; }
-      .finder { grid-template-columns: 1fr 1fr; }
-      .search-field { grid-column: 1 / -1; }
+      .finder { grid-template-columns: 1fr; }
+      .search-field { grid-column: auto; }
       .finder .button { width: 100%; }
       .section-title-row { display: block; }
       .section-note { margin-top: 6px; }
@@ -752,7 +746,6 @@
           <input id="guide-search" type="search" placeholder="Type a gadget or topic…" autocomplete="off">
         </div>
         <button class="button primary-button" type="submit">Find guide</button>
-        <button class="button voice-button" id="voice-search" type="button" aria-label="Find a guide using your voice">🎙 Use voice</button>
         <p class="search-status" id="search-status" aria-live="polite"></p>
       </form>
     </section>
@@ -881,7 +874,6 @@
       const searchForm = document.getElementById("finder");
       const searchInput = document.getElementById("guide-search");
       const searchStatus = document.getElementById("search-status");
-      const voiceButton = document.getElementById("voice-search");
       const guide = document.querySelector("[data-guide]");
       const indexLink = document.querySelector("[data-index-link]");
       const noResults = document.getElementById("no-results");
@@ -967,44 +959,6 @@
       });
 
       searchInput.addEventListener("input", () => findGuide(searchInput.value, false));
-
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.lang = "en-US";
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-
-        voiceButton.addEventListener("click", () => {
-          if (voiceButton.classList.contains("listening")) return;
-          voiceButton.classList.add("listening");
-          voiceButton.textContent = "Listening…";
-          searchStatus.textContent = "Say a gadget or topic, such as “Pulsetto.”";
-          try { recognition.start(); } catch (_) {}
-        });
-
-        recognition.addEventListener("result", event => {
-          const words = event.results[0][0].transcript;
-          searchInput.value = words;
-          findGuide(words, true);
-        });
-
-        recognition.addEventListener("end", () => {
-          voiceButton.classList.remove("listening");
-          voiceButton.textContent = "🎙 Use voice";
-        });
-
-        recognition.addEventListener("error", event => {
-          searchStatus.textContent = event.error === "not-allowed"
-            ? "Microphone access is off. You can still type in the search box."
-            : "Voice search could not hear that. Please try again or type a search.";
-        });
-      } else {
-        voiceButton.addEventListener("click", () => {
-          searchStatus.textContent = "Voice search is not available in this browser. You can type in the search box.";
-          searchInput.focus();
-        });
-      }
 
       function guideText() {
         const clone = guide.cloneNode(true);
