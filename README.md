@@ -36,7 +36,7 @@ The build creates:
 The repository includes `wrangler.jsonc`. In Cloudflare Workers Builds, use:
 
 - Production branch: `main`
-- Build command: `npm run build`
+- Build command: optional (`npm install` already runs the build)
 - Deploy command: `npx wrangler deploy`
 
 The current public pilot is available at:
