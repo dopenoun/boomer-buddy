@@ -1,0 +1,201 @@
+{
+  "schemaVersion": "boomer-buddy.security-receipt.v1",
+  "review": {
+    "runtimeBoundaryVersion": "0+patron-transport-v1",
+    "date": "2026-08-11",
+    "repositoryBaselineCommit": "dab993f",
+    "reviewedArtifact": "uncommitted working tree",
+    "publication": "none",
+    "testCount": 71,
+    "existingRuntimeTestCount": 39,
+    "transportIntegrationAndAdversarialTestCount": 32,
+    "adversarialReview": {
+      "baseline": "dab993f60adb7f540af747b73ea2e1a8ae33174c",
+      "defectsFixed": [
+        "unvalidated identity verifier output and audience",
+        "unbounded identity verification and request-body consumption",
+        "non-canonical approval token encodings",
+        "non-recoverable exact retry after durable nonce consumption",
+        "stored JSON not bound to SQLite partition columns",
+        "missing SQLite schema version, shape, and foreign-key gates",
+        "permissive URL, content-length, method, and response-header handling",
+        "unbound reconnect cursors and unbounded buffered replay event count",
+        "request cancellation not observed while provider promise was pending",
+        "interrupt existence oracle across patron partitions"
+      ]
+    },
+    "dependencyAudit": {
+      "productionVulnerabilities": 0,
+      "developmentChainVulnerabilities": {
+        "moderate": 2,
+        "high": 1,
+        "path": "wrangler -> miniflare -> undici"
+      }
+    },
+    "report": "docs/patron-transport-v1-threat-model.md",
+    "adr": "docs/adr/0002-patron-transport-fetch-sse-sqlite.md",
+    "implementationReceipt": "docs/patron-transport-v1-receipt.md"
+  },
+  "claims": [
+    {
+      "id": "forged_patron_identity",
+      "status": "conditional",
+      "evidenceTests": ["TR-AUTH-001", "TR-AUTH-002", "TR-AUTH-003", "TR-AUTH-004"],
+      "residualRiskIds": ["PT-001", "PT-002"]
+    },
+    {
+      "id": "approval_authorization_signature",
+      "status": "prevented",
+      "evidenceTests": ["TR-SIGN-001", "TR-SIGN-002"],
+      "residualRiskIds": ["PT-002", "PT-003"]
+    },
+    {
+      "id": "approval_binding",
+      "status": "prevented",
+      "evidenceTests": ["TR-BIND-001", "TR-TIME-001", "TR-TIME-002"],
+      "residualRiskIds": ["PT-003"]
+    },
+    {
+      "id": "nonce_replay",
+      "status": "prevented",
+      "evidenceTests": ["TR-NONCE-001", "TR-RESTART-001", "TR-CRASH-001", "TR-CRASH-002"],
+      "residualRiskIds": ["PT-005", "PT-010"]
+    },
+    {
+      "id": "duplicate_execution_after_reconnect",
+      "status": "conditional",
+      "evidenceTests": ["TR-RESTART-001", "TR-RECONNECT-001", "TR-CRASH-001", "TR-CRASH-002", "TR-SSE-003", "SEC-IDEMP-001", "SEC-IDEMP-002"],
+      "residualRiskIds": ["PT-004", "PT-005", "PT-007"]
+    },
+    {
+      "id": "concurrent_decision_finalization",
+      "status": "prevented",
+      "evidenceTests": ["TR-RACE-001", "TR-STORE-004"],
+      "residualRiskIds": ["PT-004"]
+    },
+    {
+      "id": "restart_recovery",
+      "status": "conditional",
+      "evidenceTests": ["TR-RECOVERY-001", "TR-RESTART-001", "TR-CRASH-001", "TR-CRASH-002", "TR-STORE-001", "TR-STORE-002", "TR-STORE-003", "TR-STORE-004"],
+      "residualRiskIds": ["PT-004", "PT-005", "PT-009", "PT-010", "PT-013"]
+    },
+    {
+      "id": "cross_patron_reads_and_writes",
+      "status": "conditional",
+      "evidenceTests": ["TR-SCOPE-001", "TR-STORE-001", "TR-STORE-004", "SEC-SCOPE-001", "SEC-SCOPE-002", "SEC-SCOPE-003"],
+      "residualRiskIds": ["PT-001"]
+    },
+    {
+      "id": "malformed_or_oversized_transport_input",
+      "status": "prevented",
+      "evidenceTests": ["TR-SSE-001", "TR-SSE-002", "TR-SSE-003", "TR-SSE-004", "TR-SIZE-001", "TR-HTTP-001", "TR-HTTP-002", "SEC-AGUI-001", "SEC-AGUI-002"],
+      "residualRiskIds": ["PT-006"]
+    },
+    {
+      "id": "forged_approval_or_resume_events",
+      "status": "prevented",
+      "evidenceTests": ["TR-SIGN-001", "TR-SIGN-002", "TR-BIND-001", "TR-TIME-001", "TR-TIME-002", "TR-NONCE-001"],
+      "residualRiskIds": ["PT-001", "PT-002", "PT-003"]
+    },
+    {
+      "id": "bypassed_semantic_approval",
+      "status": "conditional",
+      "evidenceTests": ["TR-SIGN-001", "TR-SIGN-002", "TR-BIND-001", "TR-TIME-002", "SEC-APPROVAL-001", "SEC-APPROVAL-002", "SEC-APPROVAL-003", "SEC-APPROVAL-004"],
+      "residualRiskIds": ["PT-001", "PT-002", "PT-003"]
+    },
+    {
+      "id": "stale_capability_token_replay",
+      "status": "conditional",
+      "evidenceTests": ["TR-TIME-001", "TR-TIME-002", "TR-NONCE-001", "TR-CRASH-001", "SEC-TOKEN-001", "SEC-TOKEN-002", "SEC-TOKEN-003", "LIMIT-TOKEN-001"],
+      "residualRiskIds": ["PT-010"]
+    },
+    {
+      "id": "unregistered_tool_execution",
+      "status": "prevented",
+      "evidenceTests": ["TR-POLICY-001", "SEC-CAP-001", "SEC-CAP-002", "SEC-CAP-003"],
+      "residualRiskIds": []
+    },
+    {
+      "id": "provider_implementation_policy_bypass",
+      "status": "not_prevented",
+      "evidenceTests": ["TR-POLICY-001", "TR-PROVIDER-001", "TR-CANCEL-001", "SEC-PROVIDER-001", "SEC-PROVIDER-004", "LIMIT-PROVIDER-001"],
+      "residualRiskIds": ["PT-008"]
+    },
+    {
+      "id": "arbitrary_executable_generative_ui",
+      "status": "prevented",
+      "evidenceTests": ["SEC-UI-001", "SEC-UI-002", "SEC-POLICY-005"],
+      "residualRiskIds": []
+    },
+    {
+      "id": "sensitive_receipt_or_log_leakage",
+      "status": "conditional",
+      "evidenceTests": ["TR-LEAK-001", "SEC-RECEIPT-001", "SEC-PROVIDER-002", "SEC-PROVIDER-003"],
+      "residualRiskIds": ["PT-009", "PT-011"]
+    },
+    {
+      "id": "shell_or_filesystem_capability_escalation",
+      "status": "conditional",
+      "evidenceTests": ["TR-POLICY-001", "SEC-CAP-001", "SEC-CAP-003", "LIMIT-PROVIDER-001"],
+      "residualRiskIds": ["PT-008"]
+    },
+    {
+      "id": "arbitrary_network_or_mcp_invocation",
+      "status": "conditional",
+      "evidenceTests": ["TR-POLICY-001", "SEC-CAP-001", "SEC-PROVIDER-004", "LIMIT-PROVIDER-001"],
+      "residualRiskIds": ["PT-008"]
+    }
+  ],
+  "residualRiskIds": [
+    "PT-001",
+    "PT-002",
+    "PT-003",
+    "PT-004",
+    "PT-005",
+    "PT-006",
+    "PT-007",
+    "PT-008",
+    "PT-009",
+    "PT-010",
+    "PT-011",
+    "PT-012",
+    "PT-013"
+  ],
+  "evidence": {
+    "commands": [
+      "npm test",
+      "npm run typecheck",
+      "npm run lint",
+      "npm run build",
+      "npm run demo:runtime",
+      "npm run security:verify",
+      "npm run verify",
+      "git diff --check"
+    ],
+    "fileSha256": {
+      "runtime/ag-ui.ts": "759e1b66be0d7425660a2ee7ec894d7111c073db5af6239093359c76f667f3ba",
+      "runtime/capabilities.ts": "f16b74ce432042ddf4ab2eaa72ac7847a921e837eec56ddd74ecb59d3014f018",
+      "runtime/components.ts": "917de31d379cb15c44c462efa09b44358d1a112e962f42e48d217a39c386c4b1",
+      "runtime/errors.ts": "94223bfb9078d589e567e2812484fcedff82b7984119c01d385a76d03db78c93",
+      "runtime/index.ts": "04368efe170f16073d78cf823c0504259d713bef4b1786122935573289075d7a",
+      "runtime/provider.ts": "3416d9f38c27c21af8a499729910ffd1945f9b7c6edc4247b0a4b3bcf21d2257",
+      "runtime/runtime.ts": "67adb58a9e6becdf1ad619ebb233416851df1ee64fa8d692732b936cbbe262b1",
+      "runtime/store.ts": "5ff1b94263ca101e63721abc6a2115509ad96ca406b74ea60decd5d3f5f5a329",
+      "runtime/types.ts": "c8c2b082eee48604e63c73aba7fcf3094a7cbb3bace14f25eea52176a6b1f3a0",
+      "runtime/vault.ts": "15f3cc8033927f6c7cc85214db64a51a6b047abe983122b40d609b412040f762",
+      "transport/auth.ts": "683c031b0ea6cddc8b09f1423c7bc2eb360f3641912ab21141fcff45d0de6de9",
+      "transport/events.ts": "57814be96a2d8e8c8b2010656e0bd3249d20164b53ea5898cbf2416f17a8d41d",
+      "transport/http-sse.ts": "09c04877f0cb27654b5f5c3acb4f7acfd64865b3672e535934aad106afc9852a",
+      "transport/index.ts": "90e77f143d2e661280dfe3eabd314024bc801823481b6476477fba656c90312e",
+      "transport/sqlite-store.ts": "1ca41c1b1dc4c64700468012b7123612b264030538fbeaff9acf3b66a4fe7bb7",
+      "transport/types.ts": "1601d3c9115a7c491cbf8eee383ab793c5be99586a737091ec4d183adbda19ed",
+      "test/runtime.test.ts": "50c7cd1bed279274e8cd9b6d7d30b8ad759844fc09bcfcc3975e5d1472838db0",
+      "test/transport.test.ts": "53e32e52a81ea7456e1581656965f8dfa16012cd89b16ba88dfe18e13c36fb8f",
+      "scripts/authority-lint.mjs": "7a5fc2f13c351109e68198df8fb2dbc794a00263918ba713cb5b8acd7b8fb174",
+      "scripts/verify-security-receipt.mjs": "1fe84de4d9644bb3c1b8c1c0db3f455ecc51be4aad8881f38e8c705ae2291e29",
+      "package.json": "ad78136d22e645e1fb8df8dd0b3f2062d513b3b1f06726ee79dc35e057afaa28",
+      "package-lock.json": "db07d4193726cfa121b955710145adb7ba06b7a759a4860a858ffe202ff247ba",
+      "tsconfig.json": "8ec210b4355710bf2116d1c03f9c8481228827d9cdfe10a8955cc346cc3ef8f8"
+    }
+  }
+}

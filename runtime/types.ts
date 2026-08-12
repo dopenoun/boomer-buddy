@@ -100,6 +100,15 @@ export type PendingAction = {
   result: Reminder | null;
 };
 
+export type PendingDecision = "approve" | "reject" | "cancel";
+
+export type PendingResolution = {
+  action: PendingAction;
+  status: "executed" | "rejected" | "cancelled" | "timed-out";
+  reminder: Reminder | null;
+  duplicate: boolean;
+};
+
 export class SystemClock implements Clock {
   now(): Date {
     return new Date();

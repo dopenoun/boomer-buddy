@@ -10,6 +10,7 @@ import {
 import { checkedEvent, uiEvent } from "./ag-ui.js";
 import { RuntimeBoundaryError, safeError } from "./errors.js";
 import { contentDigest, InMemoryRuntimeStore } from "./store.js";
+import type { RuntimeStore } from "./store.js";
 import type {
   ApprovalState,
   Clock,
@@ -105,13 +106,30 @@ function semanticReminderQuestion(title: string, dueAt: string, timeZone: string
   return `Set a reminder to ${lowerFirst(title)} on ${date} at ${time}?`;
 }
 
+async function awaitWhileConnected<T>(operation: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return operation;
+  if (signal.aborted) {
+    throw new RuntimeBoundaryError("CLIENT_DISCONNECTED", "The connection ended before anything was changed.");
+  }
+  let abortHandler: (() => void) | undefined;
+  const disconnected = new Promise<never>((_resolve, reject) => {
+    abortHandler = () => reject(new RuntimeBoundaryError("CLIENT_DISCONNECTED", "The connection ended before anything was changed."));
+    signal.addEventListener("abort", abortHandler, { once: true });
+  });
+  try {
+    return await Promise.race([operation, disconnected]);
+  } finally {
+    if (abortHandler) signal.removeEventListener("abort", abortHandler);
+  }
+}
+
 export class BoomerBuddyRuntime {
   readonly #clock: Clock;
   readonly #ids: IdSource;
   readonly #provider: ModelProvider;
-  readonly #store: InMemoryRuntimeStore;
+  readonly #store: RuntimeStore;
 
-  constructor(input: { clock: Clock; ids: IdSource; provider: ModelProvider; store?: InMemoryRuntimeStore }) {
+  constructor(input: { clock: Clock; ids: IdSource; provider: ModelProvider; store?: RuntimeStore }) {
     if (!providerIdentifier.safeParse(input.provider.identifier).success) {
       throw new RuntimeBoundaryError("PROVIDER_CONFIGURATION_INVALID", "The model provider configuration was invalid.");
     }
@@ -157,13 +175,13 @@ export class BoomerBuddyRuntime {
         timestamp
       });
       this.#assertConnected(validatedInput.signal);
-      const rawProposal = await this.#provider.propose({
+      const rawProposal = await awaitWhileConnected(this.#provider.propose({
         patronMessage: validatedInput.content,
         messageId: validatedInput.messageId,
         now: this.#clock.now(),
         timeZone: validatedInput.timeZone,
         allowedCapabilityIds: Object.freeze(Object.keys(executableCapabilityRegistry))
-      });
+      }), validatedInput.signal);
       this.#assertConnected(validatedInput.signal);
       const parsedProposal = providerProposalSchema.safeParse(rawProposal);
       if (!parsedProposal.success) {
@@ -330,17 +348,16 @@ export class BoomerBuddyRuntime {
       });
       this.#assertConnected(validatedInput.signal);
 
-      if (action.status === "executed" && validatedInput.decision === "approve" && action.result) {
-        this.#emitCompletedAction(emit, events, action, action.result, runId, timestamp, true);
-        this.#appendReceipt(scope, runId, null, null, null, null, null, "approved", "succeeded", "run");
-        return { status: "completed", runId, actionId: action.actionId, interruptId: action.interruptId, events };
-      }
-      if (action.status !== "pending") {
-        throw new RuntimeBoundaryError("ACTION_FINALIZED", "That reminder decision has already been recorded.");
-      }
-      if (new Date(action.expiresAt).getTime() <= this.#clock.now().getTime()) {
-        action.status = "timed-out";
-        this.#store.updatePendingAction(action);
+      this.#assertConnected(validatedInput.signal);
+      const resolution = this.#store.resolvePendingAction({
+        scope,
+        interruptId: action.interruptId,
+        decision: validatedInput.decision,
+        now: this.#clock.now().toISOString(),
+        reminderId: this.#ids.next("reminder")
+      });
+      action = resolution.action;
+      if (resolution.status === "timed-out") {
         events.push(uiEvent({
           key: "SafetyNoticeCard",
           props: {
@@ -355,10 +372,8 @@ export class BoomerBuddyRuntime {
         this.#appendReceipt(scope, runId, null, null, null, null, null, "timed-out", "timed-out", "run");
         return { status: "timed-out", runId, actionId: action.actionId, interruptId: action.interruptId, events };
       }
-      if (validatedInput.decision === "cancel" || validatedInput.decision === "reject") {
-        const cancelled = validatedInput.decision === "cancel";
-        action.status = cancelled ? "cancelled" : "rejected";
-        this.#store.updatePendingAction(action);
+      if (resolution.status === "cancelled" || resolution.status === "rejected") {
+        const cancelled = resolution.status === "cancelled";
         events.push(uiEvent({
           key: cancelled ? "SafetyNoticeCard" : "ActionReceiptCard",
           props: cancelled ? {
@@ -384,13 +399,10 @@ export class BoomerBuddyRuntime {
         return { status: cancelled ? "cancelled" : "rejected", runId, actionId: action.actionId, interruptId: action.interruptId, events };
       }
 
-      this.#assertConnected(validatedInput.signal);
-      const reminder = this.#store.createReminderOnce(action, this.#clock.now().toISOString());
+      const reminder = resolution.reminder;
+      if (!reminder) throw new RuntimeBoundaryError("SAFE_FAILURE", "The request could not be completed safely.");
       createReminderManifest.outputSchema.parse(reminder);
-      action.status = "executed";
-      action.result = reminder;
-      this.#store.updatePendingAction(action);
-      this.#emitCompletedAction(emit, events, action, reminder, runId, timestamp, false);
+      this.#emitCompletedAction(emit, events, action, reminder, runId, timestamp, resolution.duplicate);
       this.#appendReceipt(scope, runId, action.actionId, action.capabilityId, action.capabilityVersion, null, null, "approved", "succeeded", "action");
       this.#appendReceipt(scope, runId, null, null, null, null, null, "approved", "succeeded", "run");
       return { status: "completed", runId, actionId: action.actionId, interruptId: action.interruptId, events };

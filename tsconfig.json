@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["runtime/**/*.ts", "scripts/**/*.ts", "test/**/*.ts"]
+  "include": ["runtime/**/*.ts", "transport/**/*.ts", "scripts/**/*.ts", "test/**/*.ts"]
 }

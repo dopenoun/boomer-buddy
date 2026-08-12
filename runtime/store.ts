@@ -3,8 +3,10 @@ import { RuntimeBoundaryError } from "./errors.js";
 import type {
   ExecutionReceipt,
   IdSource,
+  PendingDecision,
   PatronScope,
   PendingAction,
+  PendingResolution,
   Reminder
 } from "./types.js";
 
@@ -30,6 +32,67 @@ function samePendingIdentity(left: PendingAction, right: PendingAction): boolean
     JSON.stringify(left.arguments) === JSON.stringify(right.arguments);
 }
 
+export type ResolvePendingActionInput = {
+  scope: PatronScope;
+  interruptId: string;
+  decision: PendingDecision;
+  now: string;
+  reminderId: string;
+};
+
+export interface RuntimeStore {
+  assertScope(scope: PatronScope): void;
+  savePendingAction(action: PendingAction): void;
+  getPendingAction(scope: PatronScope, interruptId: string): PendingAction;
+  resolvePendingAction(input: ResolvePendingActionInput): PendingResolution;
+  listReminders(scope: Pick<PatronScope, "tenantId" | "patronId">): Reminder[];
+  appendReceipt(receipt: ExecutionReceipt): void;
+  listReceipts(scope: Pick<PatronScope, "tenantId" | "patronId">): ExecutionReceipt[];
+}
+
+export function resolvePendingDecision(
+  action: PendingAction,
+  decision: PendingDecision,
+  now: string,
+  reminderId: string,
+  existingReminder: Reminder | null
+): PendingResolution {
+  if (action.status === "executed" && decision === "approve" && action.result) {
+    return { action, status: "executed", reminder: action.result, duplicate: true };
+  }
+  if (action.status !== "pending") {
+    throw new RuntimeBoundaryError("ACTION_FINALIZED", "That reminder decision has already been recorded.");
+  }
+  if (new Date(action.expiresAt).getTime() <= new Date(now).getTime()) {
+    action.status = "timed-out";
+    return { action, status: "timed-out", reminder: null, duplicate: false };
+  }
+  if (decision !== "approve") {
+    action.status = decision === "cancel" ? "cancelled" : "rejected";
+    return { action, status: action.status, reminder: null, duplicate: false };
+  }
+  if (existingReminder && (
+    existingReminder.title !== action.arguments.title ||
+    existingReminder.dueAt !== action.arguments.dueAt ||
+    existingReminder.timeZone !== action.arguments.timeZone
+  )) {
+    throw new RuntimeBoundaryError("ID_COLLISION", "A generated identifier could not be used safely.");
+  }
+  const reminder = existingReminder ?? {
+    reminderId,
+    tenantId: action.tenantId,
+    patronId: action.patronId,
+    title: action.arguments.title,
+    dueAt: action.arguments.dueAt,
+    timeZone: action.arguments.timeZone,
+    createdAt: now,
+    actionId: action.actionId
+  };
+  action.status = "executed";
+  action.result = reminder;
+  return { action, status: "executed", reminder, duplicate: existingReminder !== null };
+}
+
 export function contentDigest(content: string): string {
   return `sha256:${createHash("sha256").update(content).digest("hex")}`;
 }
@@ -50,7 +113,7 @@ export function assertReceiptIsSafe(receipt: ExecutionReceipt): void {
   inspect(receipt);
 }
 
-export class InMemoryRuntimeStore {
+export class InMemoryRuntimeStore implements RuntimeStore {
   readonly #ids: IdSource;
   readonly #threadOwners = new Map<string, string>();
   readonly #pendingActions = new Map<string, PendingAction>();
@@ -102,6 +165,16 @@ export class InMemoryRuntimeStore {
       throw new RuntimeBoundaryError("CROSS_PATRON_ACCESS", "That approval request belongs to a different patron.");
     }
     this.#pendingActions.set(action.interruptId, structuredClone(action));
+  }
+
+  resolvePendingAction(input: ResolvePendingActionInput): PendingResolution {
+    const action = this.getPendingAction(input.scope, input.interruptId);
+    const actionKey = tupleKey(action.tenantId, action.patronId, action.actionId);
+    const existing = this.#remindersByAction.get(actionKey) ?? null;
+    const resolution = resolvePendingDecision(action, input.decision, input.now, input.reminderId, existing);
+    if (resolution.reminder) this.#remindersByAction.set(actionKey, structuredClone(resolution.reminder));
+    this.updatePendingAction(resolution.action);
+    return structuredClone(resolution);
   }
 
   createReminderOnce(action: PendingAction, createdAt: string): Reminder {

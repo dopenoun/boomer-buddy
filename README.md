@@ -27,6 +27,14 @@ npm run build
 
 See [ADR 0001](docs/adr/0001-narrow-runtime-not-hermes.md), the [capability and threat model](docs/runtime-boundary-threat-model.md), the [implementation receipt](docs/runtime-boundary-v0-receipt.md), and the [adversarial security review](docs/security-review-runtime-boundary-v0.md).
 
+## Patron Transport v1
+
+`transport/` adds a framework-free Fetch `Request`/`Response` HTTP/SSE adapter around the existing runtime, an explicit identity-verification interface, decision-specific HMAC approval authorizations, durable request/nonce replay state, and a patron-partitioned SQLite reference store. It does not change the two executable capabilities or the static deployment.
+
+The included `DeterministicTestIdentityAdapter` is test-only. No real identity provider, production authentication, HTTP listener, Cloudflare Worker entry point, production database binding, secret management, or deployment is configured.
+
+See [ADR 0002](docs/adr/0002-patron-transport-fetch-sse-sqlite.md), the [Patron Transport v1 threat model](docs/patron-transport-v1-threat-model.md), and the [implementation receipt](docs/patron-transport-v1-receipt.md).
+
 ## Local development
 
 ```bash

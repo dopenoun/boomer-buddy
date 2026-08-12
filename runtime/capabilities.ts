@@ -14,6 +14,7 @@ const semanticTitle = z.string().trim().min(1).max(120).refine(
   (value) => !hasUnsafeDisplayControl(value),
   "Control characters are not allowed in semantic approval text."
 );
+const storedIdentifier = z.string().min(1).max(200).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/);
 
 const searchInput = z.object({
   query: z.string().trim().min(3).max(200)
@@ -38,14 +39,14 @@ const reminderInput = z.object({
 }).strict();
 
 const reminderOutput = z.object({
-  reminderId: z.string(),
-  tenantId: z.string(),
-  patronId: z.string(),
+  reminderId: storedIdentifier,
+  tenantId: storedIdentifier,
+  patronId: storedIdentifier,
   title: z.string(),
   dueAt: z.iso.datetime({ offset: true }),
   timeZone: z.string(),
   createdAt: z.iso.datetime({ offset: true }),
-  actionId: z.string()
+  actionId: storedIdentifier
 }).strict();
 
 export const searchHelpCatalogManifest = Object.freeze({
