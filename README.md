@@ -11,6 +11,22 @@ This first pilot contains one Pulsetto Fit guide for family usability testing.
 
 No Astro, Svelte, or application framework is required for this pilot.
 
+## Runtime Boundary v0
+
+The repository now also contains a dependency-light TypeScript reference runtime under `runtime/`. It is deliberately separate from the static guidebook and from the generated `public/` assets, so the existing family usability pilot and Cloudflare deployment remain unchanged.
+
+Runtime Boundary v0 uses the official `@ag-ui/core` event schemas at the wire boundary, while policy, patron scope, capability validation, approvals, receipts, component validation, and execution stay in Boomer Buddy's own domain modules. Only `search_help_catalog` and `create_reminder` are executable. The included adapters are deterministic and process-local; they demonstrate the contract but are not a production API or durable store.
+
+```bash
+npm test
+npm run typecheck
+npm run lint
+npm run demo:runtime
+npm run build
+```
+
+See [ADR 0001](docs/adr/0001-narrow-runtime-not-hermes.md), the [capability and threat model](docs/runtime-boundary-threat-model.md), the [implementation receipt](docs/runtime-boundary-v0-receipt.md), and the [adversarial security review](docs/security-review-runtime-boundary-v0.md).
+
 ## Local development
 
 ```bash

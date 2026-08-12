@@ -1,0 +1,122 @@
+{
+  "schemaVersion": "boomer-buddy.security-receipt.v1",
+  "review": {
+    "runtimeBoundaryVersion": "0",
+    "date": "2026-08-11",
+    "repositoryBaselineCommit": "29dffadaee718947d787f259597f220513d64458",
+    "reviewedArtifact": "uncommitted working tree",
+    "publication": "none",
+    "testCount": 39,
+    "controlAndRegressionTestCount": 35,
+    "boundaryCharacterizationTestCount": 4,
+    "dependencyAudit": {
+      "productionVulnerabilities": 0,
+      "developmentChainVulnerabilities": {
+        "moderate": 2,
+        "high": 1,
+        "path": "wrangler -> miniflare -> undici"
+      }
+    },
+    "report": "docs/security-review-runtime-boundary-v0.md"
+  },
+  "claims": [
+    {
+      "id": "shell_or_filesystem_capability_escalation",
+      "status": "conditional",
+      "evidenceTests": ["SEC-CAP-001", "SEC-CAP-003", "SEC-POLICY-005", "LIMIT-PROVIDER-001"],
+      "residualRiskIds": ["SR-002"]
+    },
+    {
+      "id": "arbitrary_network_or_mcp_invocation",
+      "status": "conditional",
+      "evidenceTests": ["SEC-CAP-001", "SEC-PROVIDER-004", "SEC-POLICY-005", "LIMIT-PROVIDER-001"],
+      "residualRiskIds": ["SR-002"]
+    },
+    {
+      "id": "unregistered_tool_execution",
+      "status": "prevented",
+      "evidenceTests": ["SEC-CAP-001", "SEC-CAP-002", "SEC-CAP-003", "SEC-PROVIDER-004"],
+      "residualRiskIds": []
+    },
+    {
+      "id": "bypassed_semantic_approval",
+      "status": "conditional",
+      "evidenceTests": ["SEC-APPROVAL-001", "SEC-APPROVAL-002", "SEC-APPROVAL-003", "SEC-APPROVAL-004", "LIMIT-AUTH-001"],
+      "residualRiskIds": ["SR-001"]
+    },
+    {
+      "id": "duplicate_execution_after_reconnect",
+      "status": "conditional",
+      "evidenceTests": ["SEC-IDEMP-001", "SEC-IDEMP-002", "SEC-RECONNECT-001", "LIMIT-DURABILITY-001"],
+      "residualRiskIds": ["SR-003"]
+    },
+    {
+      "id": "cross_patron_reads_and_writes",
+      "status": "conditional",
+      "evidenceTests": ["SEC-SCOPE-001", "SEC-SCOPE-002", "SEC-SCOPE-003", "LIMIT-AUTH-001"],
+      "residualRiskIds": ["SR-001"]
+    },
+    {
+      "id": "arbitrary_executable_generative_ui",
+      "status": "prevented",
+      "evidenceTests": ["SEC-UI-001", "SEC-UI-002", "SEC-APPROVAL-004", "SEC-POLICY-005"],
+      "residualRiskIds": []
+    },
+    {
+      "id": "forged_approval_or_resume_events",
+      "status": "not_prevented",
+      "evidenceTests": ["SEC-AGUI-002", "SEC-SCOPE-001", "LIMIT-AUTH-001"],
+      "residualRiskIds": ["SR-001"]
+    },
+    {
+      "id": "stale_capability_token_replay",
+      "status": "conditional",
+      "evidenceTests": ["SEC-TOKEN-001", "SEC-TOKEN-002", "SEC-TOKEN-003", "LIMIT-TOKEN-001", "LIMIT-DURABILITY-001"],
+      "residualRiskIds": ["SR-003", "SR-004"]
+    },
+    {
+      "id": "sensitive_receipt_or_log_leakage",
+      "status": "conditional",
+      "evidenceTests": ["SEC-RECEIPT-001", "SEC-PROVIDER-002", "SEC-PROVIDER-003"],
+      "residualRiskIds": ["SR-005"]
+    },
+    {
+      "id": "provider_implementation_policy_bypass",
+      "status": "not_prevented",
+      "evidenceTests": ["SEC-PROVIDER-001", "SEC-PROVIDER-002", "SEC-PROVIDER-004", "SEC-POLICY-005", "LIMIT-PROVIDER-001"],
+      "residualRiskIds": ["SR-002"]
+    }
+  ],
+  "fixedFindingIds": ["FX-001", "FX-002", "FX-003", "FX-004", "FX-005", "FX-006", "FX-007", "FX-008"],
+  "evidence": {
+    "commands": [
+      "npm test",
+      "npm run typecheck",
+      "npm run lint",
+      "npm run build",
+      "npm run demo:runtime",
+      "npm run security:verify",
+      "git diff --check"
+    ],
+    "fileSha256": {
+      "runtime/ag-ui.ts": "759e1b66be0d7425660a2ee7ec894d7111c073db5af6239093359c76f667f3ba",
+      "runtime/capabilities.ts": "fb2caa48c26860cf0f401503188681e0746bff20619750f44f08ff7786d779a0",
+      "runtime/components.ts": "917de31d379cb15c44c462efa09b44358d1a112e962f42e48d217a39c386c4b1",
+      "runtime/errors.ts": "3a498726b0d6306fae7e4b0b53c7738eb5f634ac55d2646e99bf176a8ef75ae7",
+      "runtime/index.ts": "04368efe170f16073d78cf823c0504259d713bef4b1786122935573289075d7a",
+      "runtime/provider.ts": "3416d9f38c27c21af8a499729910ffd1945f9b7c6edc4247b0a4b3bcf21d2257",
+      "runtime/runtime.ts": "1e4cb553f6824239133677297d4ba0763f49444950e35e182ff8bd6e880c9e6e",
+      "runtime/store.ts": "d7efa522aef2059d1192fd8b4a897e52b5d1c03d85e7e9b07718f134aa45d89e",
+      "runtime/types.ts": "43d2774030a3cab59d18976e8441988efc8a4641a0edea6a6fe598a98b6a8c5f",
+      "runtime/vault.ts": "15f3cc8033927f6c7cc85214db64a51a6b047abe983122b40d609b412040f762",
+      "test/runtime.test.ts": "50c7cd1bed279274e8cd9b6d7d30b8ad759844fc09bcfcc3975e5d1472838db0",
+      "scripts/authority-lint.mjs": "5758ad5f5356e09a676b571465faaf001052eab9fd83608fc1ab426cb3218332",
+      "scripts/verify-security-receipt.mjs": "30958d0134cde292aa1792f2e9986d30ac3a98ec400c3c82ea5141412970b354",
+      "docs/security-review-runtime-boundary-v0.md": "76d26497da14ef9bd96bb11919248854bf24994e5dedae9c63b235a475a581da",
+      "docs/runtime-boundary-threat-model.md": "1245bb337e43054e41a4a376108f1e5d23d6c8ac8a2a762ca2c7a9dcea3ceef7",
+      "docs/runtime-boundary-v0-receipt.md": "911281165f7938ec58f9341d24a975c8bd5a179572d17d20a7aede973c3230d8",
+      "package.json": "47f50649905cea5719c3d82c200d82063401eb52bcaefffe09aae6ed6a41424a",
+      "package-lock.json": "db07d4193726cfa121b955710145adb7ba06b7a759a4860a858ffe202ff247ba"
+    }
+  }
+}

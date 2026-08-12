@@ -6,10 +6,26 @@
   "scripts": {
     "dev": "python3 -m http.server 4173",
     "build": "node build.mjs",
+    "demo:runtime": "node --import tsx scripts/demo-runtime.ts",
+    "lint": "eslint . && node scripts/authority-lint.mjs",
     "postinstall": "npm run build",
+    "security:verify": "npm run test && npm run typecheck && npm run lint && node scripts/verify-security-receipt.mjs",
+    "test": "node --import tsx --test test/runtime.test.ts",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run test && npm run typecheck && npm run lint && npm run build && node scripts/verify-security-receipt.mjs",
     "deploy:cloudflare": "wrangler deploy"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.2.0",
+    "eslint": "^10.8.1",
+    "tsx": "^4.23.12",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.67.0",
     "wrangler": "^4.114.0"
+  },
+  "dependencies": {
+    "@ag-ui/core": "^0.0.57",
+    "zod": "^4.4.3"
   }
 }
