@@ -11,6 +11,6 @@
     "deploy:cloudflare": "wrangler deploy"
   },
   "devDependencies": {
-    "wrangler": "^4.114.0"
+    "wrangler": "^4.167.0"
   }
 }
