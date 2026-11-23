@@ -31,6 +31,16 @@ The build creates:
 - `public` for Cloudflare Workers Static Assets
 - `dist/server` for the connected hosted preview
 
+## Test
+
+```bash
+npm test
+```
+
+Builds the worker, then smoke-tests it with Node's built-in test runner:
+home page, known paths, 404s, security headers and the social image.
+CI runs the same command on every pull request.
+
 ## Cloudflare deployment
 
 The repository includes `wrangler.jsonc`. In Cloudflare Workers Builds, use:
